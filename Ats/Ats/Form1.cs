@@ -278,6 +278,193 @@ namespace Ats
 
         #endregion
 
+        #region 거래종목 설정 구현
+
+        /// <summary>
+        /// 거래종목 조회
+        /// </summary>
+        private void button1_Click(object sender, EventArgs e)
+        {
+            OracleCommand cmd;
+            OracleConnection conn;
+            OracleDataReader reader = null;
+
+            string sql;
+
+            string l_jongmok_cd;
+            string l_jongmok_nm;
+            int l_priority;
+            int l_buy_amt;
+            int l_buy_price;
+            int l_target_price;
+            int l_cut_loss_price;
+            string l_buy_trd_yn;
+            string l_sell_trd_yn;
+            int l_seq = 0;
+            string[] l_arr = null;
+
+            conn = null;
+            conn = connect_db(); // 데이터베이스 연결
+
+            cmd = null;
+            cmd = new OracleCommand();
+            cmd.Connection = conn;
+            cmd.CommandType = CommandType.Text;
+
+            sql = null;
+            sql = "SELECT JONGMOK_CD, JONGMOK_NM, PRIORITY, BUY_AMT, BUY_PRICE, TARGET_PRICE, CUT_LOSS_PRICE, ";
+            sql += "BUY_TRD_YN, SELL_TRD_YN ";
+            sql += "FROM TB_TRD_JONGMOK ";
+            sql += $"WHERE USER_ID = '{g_user_id}' ORDER BY PRIORITY";
+
+            cmd.CommandText = sql;
+
+            this.Invoke(new MethodInvoker(delegate ()
+            {
+                dataGridView1.Rows.Clear(); // 그리드뷰 초기화
+            }));
+
+            //this.Invoke(new Action(() =>
+            //{
+            //    dataGridView1.Rows.Clear();
+            //}));
+
+            try
+            {
+                reader = cmd.ExecuteReader(); // SQL 수행
+            }
+            catch(Exception ex)
+            {
+                write_err_log($"SELECT TB_TRD_JONGMOK ex.Message : [{ex.Message}]\n", 0);
+            }
+
+            l_jongmok_cd = "";
+            l_jongmok_nm = "";
+            l_priority = 0;
+            l_buy_amt = 0;
+            l_buy_price = 0;
+            l_target_price = 0;
+            l_cut_loss_price = 0;
+            l_buy_trd_yn = "";
+            l_sell_trd_yn = "";
+
+            while (reader.Read())
+            {
+                l_seq++;
+                l_jongmok_cd = "";
+                l_jongmok_nm = "";
+                l_priority = 0;
+                l_buy_amt = 0;
+                l_buy_price = 0;
+                l_target_price = 0;
+                l_cut_loss_price = 0;
+                l_buy_trd_yn = "";
+                l_sell_trd_yn = "";
+                l_seq = 0; // 이상해!!
+
+                // 각 컬럼 값 저장
+                l_jongmok_cd = reader[0].ToString().Trim();
+                l_jongmok_nm = reader[1].ToString().Trim();
+                l_priority = int.Parse(reader[2].ToString().Trim());
+                l_buy_amt = int.Parse(reader[3].ToString().Trim());
+                l_buy_price = int.Parse(reader[4].ToString().Trim());
+                l_target_price = int.Parse(reader[5].ToString().Trim());
+                l_cut_loss_price = int.Parse(reader[6].ToString().Trim());
+                l_buy_trd_yn = reader[7].ToString().Trim();
+                l_sell_trd_yn = reader[8].ToString().Trim();
+
+                l_arr = null;
+                l_arr = new string[] // 가져온  결과를 문자열 배열에 저장
+                {
+                    l_seq.ToString(),
+                    l_jongmok_cd,
+                    l_jongmok_nm,
+                    l_priority.ToString(),
+                    l_buy_amt.ToString(),
+                    l_buy_price.ToString(),
+                    l_target_price.ToString(),
+                    l_cut_loss_price.ToString(),
+                    l_buy_trd_yn.ToString(),
+                    l_sell_trd_yn.ToString()
+                };
+                this.Invoke(new MethodInvoker(delegate () 
+                {
+                    dataGridView1.Rows.Add(l_arr); // 데이터 그리드뷰에 추가
+                }));
+            }
+            write_msg_log("TB_TRD_JONGMOK 테이블이 조회되었습니다\n", 0);
+        }
+
+        /// <summary>
+        /// 거래종목 삽입
+        /// </summary>
+        private void button2_Click(object sender, EventArgs e)
+        {
+            OracleCommand cmd;
+            OracleConnection conn;
+
+            string sql;
+
+            string l_jongmok_cd;
+            string l_jongmok_nm;
+            int l_priority;
+            int l_buy_amt;
+            int l_buy_price;
+            int l_target_price;
+            int l_cut_loss_price;
+            string l_buy_trd_yn;
+            string l_sell_trd_yn;
+
+            foreach(DataGridViewRow Row in dataGridView1.Rows)
+            {
+                if (Convert.ToBoolean(Row.Cells[check.Name].Value) != true)
+                    continue;
+
+                if (Convert.ToBoolean(Row.Cells[check.Name].Value) == true)
+                {
+                    l_jongmok_cd = Row.Cells[1].Value.ToString();
+                    l_jongmok_nm = Row.Cells[2].Value.ToString();
+                    l_priority = int.Parse(Row.Cells[3].Value.ToString());
+                    l_buy_amt = int.Parse(Row.Cells[4].Value.ToString());
+                    l_buy_price = int.Parse(Row.Cells[5].Value.ToString());
+
+                    l_target_price = int.Parse(Row.Cells[6].Value.ToString());
+                    l_cut_loss_price = int.Parse(Row.Cells[7].Value.ToString());
+
+                    l_buy_trd_yn = Row.Cells[8].Value.ToString();
+                    l_sell_trd_yn = Row.Cells[9].Value.ToString();
+
+                    conn = null;
+                    conn = connect_db();
+
+                    cmd = null;
+                    cmd = new OracleCommand();
+                    cmd.Connection = conn;
+                    cmd.CommandType = CommandType.Text;
+
+                    sql = null;
+                    sql = $"INSERT INTO TB_TRD_JONGMOK VALUES('{g_user_id}', '{l_jongmok_cd}', '{l_jongmok_nm}',";
+                    sql += $"{l_priority}, {l_buy_amt}, {l_buy_price}, {l_target_price}, {l_cut_loss_price},";
+                    sql += $"'{l_buy_trd_yn}', '{l_sell_trd_yn}', '{g_user_id}', sysdate, null, null)";
+
+                    cmd.CommandText = sql;
+
+                    try
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
+                    catch(Exception ex)
+                    {
+                        write_err_log($"INSERT TB_TRD_JONGMOK ex.Message : [{ex.Message}]\n", 0);
+                    }
+                    write_msg_log($"종목코드 : [{l_jongmok_cd}]가 삽입되었습니다\n", 0);
+                    conn.Close();
+                }
+            }
+        }
+
+        #endregion
+
 
     }
 }
